@@ -14,7 +14,8 @@
 ### Start Desktop
 
 ```bash
-docker build -t desktop-docker 
+cd desktop-ros
+docker build -t desktop-docker .
 docker run -p 6080:80 --shm-size=512m desktop-docker # Browse http://localhost:6080/
 ```
 
