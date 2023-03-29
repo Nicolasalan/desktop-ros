@@ -16,8 +16,8 @@
 ```bash
 cd desktop-ros
 chmod 777 *
-docker build -t desktop-docker 
-docker run -p 6080:80 --shm-size=512m desktop-docker # Browse http://localhost:6080/
+sudo docker build -t desktop-docker .
+sudo docker run -p 6080:80 --shm-size=512m desktop-docker # Browse http://localhost:6080/
 ```
 
 
