@@ -1,80 +1,51 @@
-FROM dorowu/ubuntu-desktop-lxde-vnc:focal
+FROM tiryoh/ubuntu-desktop-lxde-vnc:jammy
 
-RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add -
+SHELL ["/bin/bash", "-c"]
 
 RUN apt-get update -q && \
     apt-get upgrade -yq && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -yq wget curl git build-essential vim sudo lsb-release locales bash-completion tzdata gosu && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -yq --no-install-recommends wget curl git build-essential vim sudo lsb-release locales bash-completion tzdata gosu terminator && \
     rm -rf /var/lib/apt/lists/*
-
+RUN rm /etc/apt/apt.conf.d/docker-clean
 RUN useradd --create-home --home-dir /home/ubuntu --shell /bin/bash --user-group --groups adm,sudo ubuntu && \
     echo ubuntu:ubuntu | chpasswd && \
     echo "ubuntu ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
-RUN sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list'
+ARG ROS_DISTRO=humble
+ARG INSTALL_PACKAGE=desktop
 
-RUN sudo apt-get install -y curl
-RUN curl -k https://raw.githubusercontent.com/ros/rosdistro/master/ros.key | sudo apt-key add -
-RUN sudo apt-get update
+RUN apt-get update -q && \
+    apt-get install -y curl gnupg2 lsb-release && \
+    curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null && \
+    apt-get update -q && \
+    apt-get install -y ros-${ROS_DISTRO}-${INSTALL_PACKAGE} \
+    python3-argcomplete \
+    python3-colcon-common-extensions \
+    python3-rosdep python3-vcstool && \
+    rosdep init && \
+    rm -rf /var/lib/apt/lists/*
 
-RUN sudo apt-get install -y ros-noetic-desktop-full
-RUN sudo apt-get install -y python3-rosdep
+RUN apt-get update -q && \
+    apt-get install -y \
+    ros-${ROS_DISTRO}-rqt-reconfigure \
+    ros-${ROS_DISTRO}-navigation2 \
+    ros-${ROS_DISTRO}-nav2-bringup \
+    ros-${ROS_DISTRO}-cartographer-ros \
+    ros-${ROS_DISTRO}-robot-localization \
+    ros-${ROS_DISTRO}-rviz2 \
+    ros-${ROS_DISTRO}-gazebo-ros \
+    ros-${ROS_DISTRO}-gazebo-ros-pkgs \
+    ros-${ROS_DISTRO}-xacro \
+    ros-${ROS_DISTRO}-robot-state-publisher \
+    ros-${ROS_DISTRO}-joint-state-publisher \
+    ros-${ROS_DISTRO}-rplidar-ros \
+    ros-${ROS_DISTRO}-teleop-twist-keyboard \
+    ros-${ROS_DISTRO}-tf-transformations 
 
-RUN sudo rosdep init 
-RUN rosdep update
-
-# Install dependencies
-RUN apt-get install -q -y --no-install-recommends \
-  build-essential \
-  apt-utils \
-  cmake \
-  g++ \
-  git \
-  libcanberra-gtk* \
-  python3-pip \
-  python3-tk \
-  python3-yaml \
-  python3-dev \
-  python3-numpy \
-  python3-rosinstall \
-  python3-catkin-pkg \
-  python3-rosdistro \
-  python3-rospkg \
-  python3-rosinstall-generator \
-  python3-wstool \ 
-  python3-vcstool \ 
-  python3-osrf-pycommon 
-
-# Install dependencies ros
-RUN apt-get update && apt-get install -y ros-noetic-ros-controllers \
- && apt-get install -y ros-noetic-joint-state-controller \
- && apt-get install -y ros-noetic-joint-state-publisher \
- && apt-get install -y ros-noetic-robot-state-publisher \
- && apt-get install -y ros-noetic-robot-state-controller \
- && apt-get install -y ros-noetic-xacro \ 
- && apt-get install -y ros-noetic-smach-ros \
- && apt-get install -y ros-noetic-gazebo-ros \
- && apt-get install -y ros-noetic-gazebo-ros-control \
- && apt-get install -y ros-noetic-rplidar-ros \
- && apt-get install -y ros-noetic-driver-base \
- && apt-get install -y ros-noetic-rosserial-arduino 
-
-# Setup Env
-RUN echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc
-
-#RUN sudo catkin locate --shell-verbs 
-RUN echo "$(catkin locate --shell-verbs)" >> ~/.bashrc
-RUN grep -F "$(catkin locate --shell-verbs)" ~/.bashrc
-
-RUN echo "export ROS_IP=127.0.0.1" >> ~/.bashrc
-RUN grep -F "ROS_IP" ~/.bashrc
-
-RUN echo "export ROS_MASTER_URI=http://127.0.0.1:11311" >> ~/.bashrc
-RUN grep -F "ROS_MASTER_URI" ~/.bashrc
-
-COPY ./workspace /home/ubuntu
-#VOLUME /dev /dev
-
-RUN rm -rf /var/lib/apt/lists/*
+RUN gosu ubuntu rosdep update && \
+    grep -F "source /opt/ros/${ROS_DISTRO}/setup.bash" /home/ubuntu/.bashrc || echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> /home/ubuntu/.bashrc && \
+    grep -F "source /usr/share/colcon_argcomplete/hook/colcon-argcomplete.bash" /home/ubuntu/.bashrc || echo "source /usr/share/colcon_argcomplete/hook/colcon-argcomplete.bash" >> /home/ubuntu/.bashrc && \
+    sudo chown ubuntu:ubuntu /home/ubuntu/.bashrc
 
 ENV USER ubuntu
