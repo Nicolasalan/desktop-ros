@@ -25,24 +25,7 @@ RUN apt-get update -q && \
     python3-rosdep python3-vcstool && \
     rosdep init && \
     rm -rf /var/lib/apt/lists/*
-
-RUN apt-get update -q && \
-    apt-get install -y \
-    ros-${ROS_DISTRO}-rqt-reconfigure \
-    ros-${ROS_DISTRO}-navigation2 \
-    ros-${ROS_DISTRO}-nav2-bringup \
-    ros-${ROS_DISTRO}-cartographer-ros \
-    ros-${ROS_DISTRO}-robot-localization \
-    ros-${ROS_DISTRO}-rviz2 \
-    ros-${ROS_DISTRO}-gazebo-ros \
-    ros-${ROS_DISTRO}-gazebo-ros-pkgs \
-    ros-${ROS_DISTRO}-xacro \
-    ros-${ROS_DISTRO}-robot-state-publisher \
-    ros-${ROS_DISTRO}-joint-state-publisher \
-    ros-${ROS_DISTRO}-rplidar-ros \
-    ros-${ROS_DISTRO}-teleop-twist-keyboard \
-    ros-${ROS_DISTRO}-tf-transformations 
-
+    
 RUN gosu ubuntu rosdep update && \
     grep -F "source /opt/ros/${ROS_DISTRO}/setup.bash" /home/ubuntu/.bashrc || echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> /home/ubuntu/.bashrc && \
     grep -F "source /usr/share/colcon_argcomplete/hook/colcon-argcomplete.bash" /home/ubuntu/.bashrc || echo "source /usr/share/colcon_argcomplete/hook/colcon-argcomplete.bash" >> /home/ubuntu/.bashrc && \
